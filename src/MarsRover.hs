@@ -34,15 +34,18 @@ changeOrientation TurnRight South = West
 changeOrientation TurnRight West = North
 changeOrientation _ o = o
 
+moves :: Orientation -> Position
+moves North = Position 0 1
+moves South = Position 0 (-1)
+moves East = Position 1 0
+moves West = Position (-1) 0
+
+invertMove :: Position -> Position
+invertMove (Position x y) = Position (-x) (-y)
+
 move :: Command  -> Orientation -> Position -> Position
-move Forward North (Position x y) = Position x (y+1)
-move Forward East (Position x y) = Position (x+1) y
-move Forward South (Position x y) = Position x (y-1)
-move Forward West (Position x y) = Position (x-1) y
-move Backward North (Position x y) = Position x (y-1)
-move Backward East (Position x y) = Position (x-1) y
-move Backward South (Position x y) = Position x (y+1)
-move Backward West (Position x y) = Position (x+1) y
+move Forward o p = p <> moves o
+move Backward o p = p <> invertMove (moves o)
 move _ _ p = p
 
 applyCommand :: GroundMap -> Rover -> Command -> Rover
