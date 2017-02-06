@@ -1,61 +1,66 @@
 module MarsRover where
 
-import Data.Monoid
+import Orientation
+import Position
+import Control.Applicative
+import Data.Maybe
+import Data.Map (Map, (!))
+import qualified Data.Map as M
 
 type Width = Int
 type Height = Int
 
-data GroundMap = GroundMap Width Height
-data Position = Position Int Int deriving (Eq, Show)
-
-instance Monoid Position where
-  mempty = Position 0 0
-  mappend (Position xa ya) (Position xb yb) = Position (xa + xb) (ya + yb)
-
-data Orientation = North | East | South | West deriving (Eq, Show)
+data Ground = Plain (Maybe Rover) | Rock
+data MapSize = MapSize Width Height deriving (Eq, Show, Read)
+type MapElements = Map Position Ground
 
 data Rover = Rover { getPosition :: Position
                      , getOrientation :: Orientation
-                     } deriving (Eq, Show)
+                     } deriving (Eq, Show, Read)
 
-data Command = Forward | Backward | TurnLeft | TurnRight deriving (Eq, Show)
+type Command = Either OrientationCommand PositionCommand
 
-constrainPosition :: GroundMap -> Position -> Position
-constrainPosition (GroundMap width height) (Position x y) = Position (x `mod` width) (y `mod` height)
+printCommand :: Command -> String
+printCommand (Left TurnLeft) = "Turning left"
+printCommand (Left TurnRight) = "Turning right"
+printCommand (Right Forward) = "Going forward"
+printCommand (Right Backward) = "Going backward"
 
-changeOrientation :: Command -> Orientation -> Orientation
-changeOrientation TurnLeft North = West
-changeOrientation TurnLeft West = South
-changeOrientation TurnLeft South = East
-changeOrientation TurnLeft East = North
-changeOrientation TurnRight North = East
-changeOrientation TurnRight East = South
-changeOrientation TurnRight South = West
-changeOrientation TurnRight West = North
-changeOrientation _ o = o
 
-moves :: Orientation -> Position
-moves North = Position 0 1
-moves South = Position 0 (-1)
-moves East = Position 1 0
-moves West = Position (-1) 0
+parseCommand :: String -> Maybe Command
+parseCommand "f" = Just (Right Forward)
+parseCommand "b" = Just (Right Backward)
+parseCommand "l" = Just (Left TurnLeft)
+parseCommand "r" = Just (Left TurnRight)
+parseCommand _ = Nothing
 
-invertMove :: Position -> Position
-invertMove (Position x y) = Position (-x) (-y)
+constrainPosition :: MapSize -> Position -> Position
+constrainPosition (MapSize width height) (Position x y) = Position (x `mod` width) (y `mod` height)
 
-move :: Command  -> Orientation -> Position -> Position
-move Forward o p = p <> moves o
-move Backward o p = p <> invertMove (moves o)
-move _ _ p = p
+applyCommand :: MapSize -> Rover -> Command -> Rover
+applyCommand m (Rover p o) (Left c) = Rover p (changeOrientation c o)
+applyCommand m (Rover p o) (Right c) = Rover (constrainPosition m (move c o p)) o
 
-applyCommand :: GroundMap -> Rover -> Command -> Rover
-applyCommand m (Rover p o) TurnLeft = Rover p (changeOrientation TurnLeft o)
-applyCommand m (Rover p o) TurnRight = Rover p (changeOrientation TurnRight o)
-applyCommand m (Rover p o) Forward = Rover (constrainPosition m (move Forward o p)) o
-applyCommand m (Rover p o) Backward = Rover (constrainPosition m (move Backward o p)) o
-
-applyCommands :: GroundMap -> Rover -> [Command] -> Rover
+applyCommands :: MapSize -> Rover -> [Command] -> Rover
 applyCommands m = foldl (applyCommand m)
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+readCommands :: String -> [Command]
+readCommands s = mapMaybe parseCommand (words s)
+
+readMapSize :: String -> MapSize
+readMapSize s = read s :: MapSize
+
+readRover :: String -> Rover
+readRover s = read s :: Rover
+
+readRocks :: String -> [Position]
+readRocks s = map (uncurry Position) ps
+  where ps = read s :: [(Int, Int)]
+
+insertRockInMap :: MapElements -> Position -> MapElements
+insertRockInMap m p = M.insert p Rock m
+
+buildMapElements :: Rover -> [Position] -> MapElements
+buildMapElements rover rocks = roverInPosition
+  where mapWithRocks = foldl insertRockInMap M.empty rocks
+        roverInPosition = M.insert (getPosition rover) (Plain (Just rover)) mapWithRocks

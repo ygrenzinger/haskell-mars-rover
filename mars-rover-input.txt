@@ -1,0 +1,4 @@
+MapSize 20 20
+Rover {getPosition = Position 10 10, getOrientation = East}
+[(11,11),(12,8),(5,15),(8,12)]
+f r f f r b
