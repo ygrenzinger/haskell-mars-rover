@@ -1,4 +1,4 @@
-MapSize 20 20
-Rover {getPosition = Position 10 10, getOrientation = East}
+PlanetSize 20 20
 [(11,11),(12,8),(5,15),(8,12)]
+Rover {getPosition = Position 10 10, getOrientation = East, getError = Nothing}
 f r f f r b

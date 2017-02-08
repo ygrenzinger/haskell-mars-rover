@@ -7,6 +7,8 @@ import Orientation
 import System.IO
 import Data.List
 import Data.List.Split
+import Data.Map (Map, (!))
+import qualified Data.Map as M
 
 cliPosition :: IO Position
 cliPosition = do
@@ -25,19 +27,20 @@ cliRover :: IO Rover
 cliRover = do
   position <- cliPosition
   orientation <- cliOrientation
-  return (Rover position orientation)
+  return (Rover position orientation Nothing)
 
-cliGroundSize :: IO MapSize
+cliGroundSize :: IO PlanetSize
 cliGroundSize = do
   putStr "Which width for Mars? "
   width <- readLn :: IO Int
   putStr "Which height for Mars? "
   height <- readLn :: IO Int
-  return (MapSize width height)
+  return (PlanetSize width height)
 
 interactWithRover :: IO ()
 interactWithRover = do
-  mars <- cliGroundSize
+  size <- cliGroundSize
+  let mars = Planet size M.empty
   roverInput <- cliRover
   let startMessage  = "Rover " ++ show roverInput ++ " on " ++ show mars
   putStrLn startMessage
@@ -51,13 +54,20 @@ main :: IO ()
 main = do
     fileContent <- readFile "mars-rover-input.txt"
     let contents = splitOn "\n" fileContent
-    let mapSize = readMapSize $ head contents
-    putStrLn ("MapSize : " ++ show mapSize)
-    let rover = readRover $ contents !! 1
-    putStrLn ("Rover start position : " ++ show rover)
-    let rockPositions = readRocks $ contents !! 2
+    let size = readPlanetSize $ head contents
+    putStrLn ("PlanetSize : " ++ show size)
+
+    let rockPositions = readRocks $ contents !! 1
     putStrLn ("Rock positions : " ++ show rockPositions)
+
+    let rover = readRover $ contents !! 2
+    putStrLn ("Rover start position : " ++ show rover)
+
+    let planet = Planet size (buildMapElements rover rockPositions)
+    putStrLn ("Planet : " ++ show planet)
+
     let commands = readCommands $ contents !! 3
     putStrLn ("Commands : " ++ intercalate ", " (map printCommand commands))
-    let roverEndState = applyCommands mapSize rover commands
+
+    let (roverEndState, planetEndState) = applyCommands planet rover commands
     putStrLn ("Rover end position : " ++ show roverEndState)
