@@ -1,8 +1,9 @@
 module Main where
 
-import MarsRover
-import Position
 import Orientation
+import Position
+import Planet
+import MarsRover
 
 import System.IO
 import Data.List
@@ -40,7 +41,8 @@ cliGroundSize = do
 interactWithRover :: IO ()
 interactWithRover = do
   size <- cliGroundSize
-  let mars = Planet size M.empty
+  let empty = M.empty :: Map Position (Ground Rover)
+  let mars = Planet size empty
   roverInput <- cliRover
   let startMessage  = "Rover " ++ show roverInput ++ " on " ++ show mars
   putStrLn startMessage

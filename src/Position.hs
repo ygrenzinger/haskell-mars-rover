@@ -5,6 +5,10 @@ import Data.Monoid
 
 data Position = Position Int Int deriving (Eq, Ord, Show, Read)
 
+class HasPosition a where
+  setPosition :: a -> Position -> a
+  getPosition :: a -> Position
+
 instance Monoid Position where
   mempty = Position 0 0
   mappend (Position xa ya) (Position xb yb) = Position (xa + xb) (ya + yb)

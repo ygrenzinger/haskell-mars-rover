@@ -5,9 +5,10 @@ import Data.Maybe
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 
-import MarsRover
-import Position
 import Orientation
+import Position
+import Planet
+import MarsRover
 
 initPos = Position 1 1
 initRover = Rover initPos North Nothing
@@ -16,7 +17,7 @@ width = 10
 height = 10
 size = PlanetSize width height
 
-buildPlanet :: Rover -> [Position] -> Planet
+buildPlanet :: Rover -> [Position] -> Mars
 buildPlanet rover@(Rover pos o s) rocks = Planet size withRocks
   where elmts = M.insert pos (Plain (Just rover)) M.empty
         withRocks = insertRocksInMap elmts rocks
@@ -44,7 +45,7 @@ randomRoverAndMove = do
 prop_moveDontChangeOrientation :: Property
 prop_moveDontChangeOrientation =
   forAll randomRoverAndMove
-  (\(rover, move) -> getOrientation (fst (applyCommand planet rover move)) == getOrientation rover)
+  (\(rover, move) -> orientation (fst (applyCommand planet rover move)) == orientation rover)
 
 randomRoverAndTurn :: Gen (Rover, Command)
 randomRoverAndTurn = do
@@ -55,11 +56,11 @@ randomRoverAndTurn = do
 prop_turnDontChangePosition :: Property
 prop_turnDontChangePosition =
   forAll randomRoverAndTurn
-  (\(rover, turn) -> getPosition (fst (applyCommand planet rover turn)) == getPosition rover)
+  (\(rover, turn) -> position (fst (applyCommand planet rover turn)) == position rover)
 
 isRoverOnplanet :: Rover -> Bool
 isRoverOnplanet rover = 0 <= x && x < width && 0 <= y && y < height
-  where (Position x y ) = getPosition rover
+  where (Position x y ) = position rover
 
 prop_shouldStayOnplanet :: Property
 prop_shouldStayOnplanet =

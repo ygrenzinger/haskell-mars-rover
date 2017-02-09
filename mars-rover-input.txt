@@ -1,4 +1,4 @@
 PlanetSize 20 20
 [(11,11),(12,8),(5,15),(8,12)]
-Rover {getPosition = Position 10 10, getOrientation = East, getError = Nothing}
+Rover {position = Position 10 10, orientation = East, blockedBy = Nothing}
 f r f f r b

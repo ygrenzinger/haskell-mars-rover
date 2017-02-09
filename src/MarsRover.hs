@@ -2,23 +2,22 @@ module MarsRover where
 
 import Orientation
 import Position
+import Planet
 import Control.Applicative
 import Data.Maybe
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 
-type Width = Int
-type Height = Int
-
-data Ground = Plain (Maybe Rover) | Rock deriving (Eq, Show, Read)
-data PlanetSize = PlanetSize Width Height deriving (Eq, Show, Read)
-type MapElements = Map Position Ground
-data Planet = Planet PlanetSize MapElements deriving (Eq, Show, Read)
-
-data Rover = Rover { getPosition :: Position
-                     , getOrientation :: Orientation
-                     , getError :: Maybe String
+data Rover = Rover { position :: Position
+                     , orientation :: Orientation
+                     , blockedBy :: Maybe String
                    } deriving (Eq, Show, Read)
+
+instance HasPosition Rover where
+  getPosition = position
+  setPosition (Rover _ o b) newPos = Rover newPos o b
+
+type Mars = Planet Rover
 
 type Command = Either OrientationCommand PositionCommand
 
@@ -35,17 +34,14 @@ parseCommand "l" = Just (Left TurnLeft)
 parseCommand "r" = Just (Left TurnRight)
 parseCommand _ = Nothing
 
-constrainPosition :: PlanetSize -> Position -> Position
-constrainPosition (PlanetSize width height) (Position x y) = Position (x `mod` width) (y `mod` height)
-
-moveRoverOnPlanet :: Planet -> Rover -> Position -> (Rover, Planet)
+moveRoverOnPlanet :: Planet Rover -> Rover -> Position -> (Rover, Planet Rover)
 moveRoverOnPlanet (Planet size elmts) (Rover oldPos o s) newPos = (rover, Planet size reinserted)
   where rover = Rover newPos o s
         deleted = M.delete oldPos elmts
         reinserted = M.insert newPos (Plain (Just rover)) deleted
 
 -- functor could improve this ?
-applyCommand :: Planet -> Rover -> Command -> (Rover, Planet)
+applyCommand :: Mars -> Rover -> Command -> (Rover, Mars)
 applyCommand planet (Rover p o s) (Left c) = (Rover p (changeOrientation c o) s, planet)
 applyCommand planet@(Planet size elmts) rover@(Rover p o s) (Right c) =
   case elmtAtNextPos of Nothing -> moveRoverOnPlanet planet rover nextPos
@@ -54,10 +50,10 @@ applyCommand planet@(Planet size elmts) rover@(Rover p o s) (Right c) =
     where nextPos = constrainPosition size (move c o p)
           elmtAtNextPos = M.lookup nextPos elmts
 
-applyCommands :: Planet -> Rover -> [Command] -> (Rover, Planet)
+applyCommands :: Mars -> Rover -> [Command] -> (Rover, Mars)
 applyCommands currentPlanet currentRover [] = (currentRover, currentPlanet)
 applyCommands currentPlanet currentRover commands =
-  if isNothing(getError rover)
+  if isNothing(blockedBy rover)
     then applyCommands planet rover (tail commands)
     else (rover, planet)
   where (rover, planet) = applyCommand currentPlanet currentRover (head commands)
@@ -65,23 +61,5 @@ applyCommands currentPlanet currentRover commands =
 readCommands :: String -> [Command]
 readCommands s = mapMaybe parseCommand (words s)
 
-readPlanetSize :: String -> PlanetSize
-readPlanetSize s = read s :: PlanetSize
-
 readRover :: String -> Rover
 readRover s = read s :: Rover
-
-readRocks :: String -> [Position]
-readRocks s = map (uncurry Position) ps
-  where ps = read s :: [(Int, Int)]
-
-insertRockInMap :: MapElements -> Position -> MapElements
-insertRockInMap m p = M.insert p Rock m
-
-insertRocksInMap :: MapElements -> [Position] -> MapElements
-insertRocksInMap = foldl insertRockInMap
-
-buildMapElements :: Rover -> [Position] -> MapElements
-buildMapElements rover rocks = roverInPosition
-  where mapWithRocks = insertRocksInMap M.empty rocks
-        roverInPosition = M.insert (getPosition rover) (Plain (Just rover)) mapWithRocks
