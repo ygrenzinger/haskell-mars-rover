@@ -10,7 +10,11 @@ import qualified Data.Map as M
 type Width = Int
 type Height = Int
 
-data (HasPosition a) => Ground a = Plain (Maybe a) | Rock deriving (Eq, Show, Read)
+data Ground a = Plain (Maybe a) | Rock deriving (Eq, Show, Read)
+
+buildGroundWithElmt :: (HasPosition a) => a -> Ground a
+buildGroundWithElmt a = Plain (Just a)
+
 data PlanetSize = PlanetSize Width Height deriving (Eq, Show, Read)
 type MapElements a = Map Position (Ground a)
 data Planet a = Planet PlanetSize (MapElements a) deriving (Eq, Show, Read)
@@ -34,4 +38,4 @@ insertRocksInMap = foldl insertRockInMap
 buildMapElements :: (HasPosition a) => a -> [Position] -> MapElements a
 buildMapElements elmt rocks = elmtInPosition
   where mapWithRocks = insertRocksInMap M.empty rocks
-        elmtInPosition = M.insert (getPosition elmt) (Plain (Just elmt)) mapWithRocks
+        elmtInPosition = M.insert (getPosition elmt) (buildGroundWithElmt elmt) mapWithRocks
