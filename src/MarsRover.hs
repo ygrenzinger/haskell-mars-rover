@@ -3,9 +3,9 @@ module MarsRover where
 import Orientation
 import Position
 import Planet
-import Control.Applicative
+import Control.Applicative()
 import Data.Maybe
-import Data.Map (Map, (!))
+import Data.Map()
 import qualified Data.Map as M
 
 data Rover = Rover { position :: Position
@@ -43,7 +43,7 @@ moveRoverOnPlanet (Planet size elmts) (Rover oldPos o s) newPos = (rover, Planet
 -- functor could improve this ?
 applyCommand :: Mars -> Rover -> Command -> (Rover, Mars)
 applyCommand planet (Rover p o s) (Left c) = (Rover p (changeOrientation c o) s, planet)
-applyCommand planet@(Planet size elmts) rover@(Rover p o s) (Right c) =
+applyCommand planet@(Planet size elmts) rover@(Rover p o _) (Right c) =
   case elmtAtNextPos of Nothing -> moveRoverOnPlanet planet rover nextPos
                         Just Rock -> (Rover p o (Just ("Found rock at " ++ show nextPos)), planet)
                         Just (Plain a) -> (Rover p o (Just ("Found " ++ show a)), planet)

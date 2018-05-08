@@ -1,9 +1,7 @@
 module Orientation where
 
-import Data.Maybe
-
 data Orientation = North | East | South | West
-  deriving (Eq, Show, Read, Bounded, Enum)
+  deriving (Eq, Show, Read, Enum)
 
 data OrientationCommand = TurnLeft | TurnRight
   deriving (Eq, Show, Read)
